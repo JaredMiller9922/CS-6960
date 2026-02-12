@@ -1,0 +1,35 @@
+import datasets
+from langchain_core.documents import Document
+from langchain_community.retrievers import BM25Retriever
+
+class InviteeRetriever:
+    def __init__(self):
+        self.docs = self._load_docs()
+        self.retriever = BM25Retriever.from_documents(self.docs)
+    
+    def _load_docs(self):
+        # Load the dataset
+        guest_dataset = datasets.load_dataset("agents-course/unit3-invitees", split="train")
+
+        # Convert dataset entries into Document objects
+        docs = [
+            Document(
+                page_content="\n".join([
+                    f"Name: {guest['name']}",
+                    f"Relation: {guest['relation']}",
+                    f"Description: {guest['description']}",
+                    f"Email: {guest['email']}"
+                ]),
+                metadata={"name": guest["name"]}
+            )
+            for guest in guest_dataset
+        ]
+
+        return docs
+
+    def retreive(self, query: str):
+        results = self.retriever.invoke(query)
+        if results:
+            return "\n\n".join([doc.page_content for doc in results[:3]])
+        else:
+            return "No matching guest information found."
